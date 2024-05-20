@@ -60,6 +60,14 @@
   }
   }
 </style>
+
+ <style>
+  .uppercase {
+    text-transform: uppercase;
+  }
+</style> 
+
+
 <script>
   jQuery(document).ready(function($) {
     $(".clickable-row").click(function() {
@@ -74,7 +82,7 @@
             <ol class="breadcrumb">
                 {% if log_details.user_type == 'Staff' %} <li class="breadcrumb-item"><a href="{% url 'staff_dashboard' %}" class="text-warning-emphasis">Dashboard</a></li>{% endif %}
                 {% if log_details.user_type == 'Company' %} <li class="breadcrumb-item"><a href="{% url 'company_dashboard' %}" class="text-warning-emphasis">Dashboard</a></li>{% endif %}
-                <li class="breadcrumb-item" aria-current="page">Bankholder_list</li>
+                <li class="breadcrumb-item" aria-current="page">Cheque_list</li>
             </ol>
         </nav>
         <div class="row mt-5">
@@ -82,24 +90,66 @@
                 <div class="card mb-3 bg-black shadow p-3 mb-5 rounded">
                     <div class="row mt-4">
                         <div class="col-7 col-sm-7 col-lg-6">
-                          <a class="text-white" style="font-size: 1.5rem;">All BankHolders</a>
+                          <a class="text-white" style="font-size: 1.5rem;">CHEQUE PAYMENT</a>
                         </div>
                     <div class="row mt-2">
                         <div class="col-md-4 col-lg-4 col-sm-10">
                             <input type="text" id="search" class="form-control text-dark"style="border-color: rgb(198, 134, 16);background-color: antiquewhite;" placeholder="Search.." autocomplete="off">
                         </div>
+                        
                     <div class="col-md-2 col-lg-2 col-sm-2">
+                      <div class="d-flex justify-content-start g-1">
                         <div class="dropdown">
                             <a class="btn text-center px-4 pt-2 btn-outline-warning" id="sortbutton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button" >
                             <i  class="fas fa-sort m-1"></i>
                             </a>
                                 <div class="dropdown-menu m-1">
-                                <a class="dropdown-item" href="{% url 'list_bankholder' %}">All</a>
-                                <a class="dropdown-item" onclick="sortTableName()">Holder Name</a>
-                                <a class="dropdown-item" onclick="sortTableBank()">Bank Name</a>
+                                <a class="dropdown-item"  onclick="sortTable(0)">Date</a>
+                                <a class="dropdown-item"  onclick="sortTable(2)">Name</a>
+                                <a class="dropdown-item" onclick="sortTable(4)">Check No.</a>
                                 </div>
                         </div>
+
+
+                        <div class="dropdown">
+                          <a class="btn text-center px-4 pt-2 btn-outline-warning" id="sortbutton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" role="button">
+                              <i class="fas fa-calendar-alt m-1"></i>
+                          </a>
+                          <div class="dropdown-menu m-1">
+                              From
+                              <input type="date" name="start_date" id="startDate" class="form-control form-control-sm border-black text-black" required>
+                              To
+                              <input type="date" name="end_date" id="endDate" class="form-control form-control-sm border-black text-black mt-1" required>
+                              <center><button class="btn btn-sm btn-outline-black bg-warning mt-2 " type="button" onclick="filterTableByDate()">Filter</button></center>
+                          </div>
+                      </div>
+                      
+                      <script>
+                          document.addEventListener("DOMContentLoaded", function() {
+                              var startDateInput = document.getElementById('startDate');
+                              var endDateInput = document.getElementById('endDate');
+                      
+                              // Add event listener to "From" date input
+                              startDateInput.addEventListener('change', function() {
+                                  // Set the minimum date of the "To" date input
+                                  endDateInput.min = startDateInput.value;
+                                  // If the "To" date is less than the minimum date, reset it
+                                  if (endDateInput.value < startDateInput.value) {
+                                      endDateInput.value = startDateInput.value;
+                                  }
+                              });
+                      
+                              // Optionally, you can initialize the minimum date for the "To" date input
+                              // endDateInput.min = startDateInput.value;
+                          });
+                      </script>
+                      
+
+                        </div>
+                        
                     </div>
+                    
+                    
                     <div class="col-sm-12 col-lg-6 col-md-6 ">
                         <div class="d-flex justify-content-end g-1">
                           <div class="dropdown">
@@ -108,24 +158,57 @@
                             </a>
 
                             <div class="dropdown-menu m-1 ">
-                                <a class="dropdown-item" onclick="applyFilter('All')">All</a>
-                                <a class="dropdown-item" onclick="applyFilter('Active')">Active</a>
-                                <a class="dropdown-item" onclick="applyFilter('Inactive')">Inactive</a>
+                                <select class="form-control form-control-sm w-30" name="" id="filterType" onchange="filterTable(this)">
+                                  <option value="All">All</option>
+                                  <option value="INVOICE">Invoice</option>
+                                  <option value="RECURRING INVOICE">Rec. Invoice</option>
+                                  <option value="CREDIT NOTE">Credit Note</option>
+                                  <option value="SALES ORDER">Sales Order</option>
+                                  <option value="RETAINER INVOICE">Retainer Invoice</option>
+                                  <option value="BILL">Bill</option>
+                                  <option value="RECURRING BILL">Rec. Bill</option>
+                                  <option value="PURCHASE ORDER">Purchase Order</option>
+                                  <option value="DEBIT NOTE">Debit Note</option>
+                                  <option value="PAYMENT RECEIVED">Payment Received</option>
+                                  <option value="EXPANSE">Expanse</option>
+                                  <option value="RECURRING EXPANSE">Rec.Expanse</option>
+                                  <option value="PAYMENT MADE">Payment Made</option>
+                                  <option value="LOAN">Loan</option>
+                                  {% comment %} <option value="EMPLOYEE SALARY">Salary</option> {% endcomment %}
+                                </select>
                             </div>
                           </div>
-                            <a data-toggle="modal" data-target="#importmodal" class="btn btn-outline-warning text-right px-3 py-2 flex-sm-row" onclick="sampleexcel()">
+                            <!-- <a data-toggle="modal" data-target="#importmodal" class="btn btn-outline-warning text-right px-3 py-2 flex-sm-row" onclick="sampleexcel()">
                                 <i class="fas fa-file-import" style='font-size:18px'></i> <span > Import</span>
-                            </a>
+                            </a> -->
                             <a onclick="ExportToExcel()" class="btn btn-outline-warning text-right px-3 py-2 flex-sm-row" >
                               <i class='fas fa-file-export' style='font-size:18px'></i> <span > Export</span>
                             </a>
                                 
-                            <a  class="btn btn-outline-warning text-right px-3 py-2 flex-sm-row" role="button"  href="{% url 'createholder' %}">
-                                <i class="fa fa-plus fs-4" ><span> New</span></i>
+                            <a  class="btn btn-outline-warning text-right px-3 py-2 flex-sm-row" role="button"  href="{% url 'statement' %}">
+                                <i class="fa fa-file fs-4" ><span> statement</span></i>
                             </a>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div class="row">
+              <div class="col-11 d-flex justify-content-between"  >
+                <div class="filter">
+                  <!-- <form action="#">
+                    <div class="form-inline">
+                      <input type="date" name="start_date" id="startDate" class="form-control form-control-sm mr-1" required>
+                      TO
+                      <input type="date" name="end_date" id="endDate" class="form-control form-control-sm ml-1" required>
+                      <button class="btn btn-sm btn-outline-secondary ml-2" type="submit">Filter</button>
+                    </div>
+                  </form> -->
+                </div>
+                <div class="bal_section pt-4 pr-3" >
+                  <span class="h4 font-weight-bold text-warning">TOTAL AMOUNT: <span id="bal">0</span></span>
+                </div>
+              </div>
             </div>
        
 
@@ -143,33 +226,201 @@
                 }
                 </style>
             
-                <div class="table-responsive example">
-                    <table class="table  text-white" id="myTable" >
-                        <thead>
-                            <tr>
-                                <th style="text-align: center;">#</th>
-                                <th style="text-align: center;">NAME</th>
-                                <th style="text-align: center;">ACCOUNT NUMBER</th>
-                                <th style="text-align: center;">IFSC CODE</th>
-                                <th style="text-align: center;">BANK NAME</th>
-                                <th style="text-align: center;">BANK BRANCH</th>
-                                <th style="text-align: center;">STATUS </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for a in account_holder %}
-                            <tr id="over" class="clickable-row" style="text-align: center;" data-href="{% url 'overview_bankholder' a.id %}">
-                                <td style="text-align: center;">{{forloop.counter}}</td>
-                                <td>{{a.customer_name}} </td>
-                                <td>{{a.account_number}}</td>
-                                <td>{{a.ifsc_code}}</td>
-                                <td>{{a.bankname}}</td>
-                                <td>{{a.branch_name}}</td>
-                                <td>{{a.status}}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="table-responsive example" >
+                  <table class="table table-responsive-md table-hover mt-4 text-white chequesTable" id="chequesTable" style="text-align: center">
+                    <thead>
+                      <tr>
+                        <th>DATE</th>
+                        <th>TYPE</th>
+                        <th>NAME</th>
+                        <th>REF. NO.</th>
+                        <th>CHEQUE NO.</th>
+                        <th>AMOUNT</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                {% for a in invoice %}
+            <tr >
+              <td style="text-align: center;">{{ a.date|date:'Y-m-d' }}</td>
+              <td style="text-align: center;">INVOICE</td>
+              <td style="text-align: center;">{{a.customer.first_name}} {{a.customer.last_name}}</td>
+              <td style="text-align: center;">{{a.reference_number}}</td>
+              <td style="text-align: center;">{{a.cheque_number}}</td>
+              <td style="text-align: center;">{{ a.advanced_paid }}</td>
+            </tr>
+            {% endfor %}
+
+            {% for a in recInvoice %}
+            <tr >
+              <td>{{ a.start_date|date:'Y-m-d' }}</td>
+              <td>RECURRING INVOICE</td>
+              <td>{{a.customer.first_name}} {{a.customer.last_name}}</td>
+              <td>{{a.reference_no}}</td>
+              <td>{{a.cheque_number}}</td>
+              <td>{{ a.advance_paid }}</td>
+            </tr>
+            {% endfor %}
+  
+            {% for a in creditNote %}
+            <tr >
+              <td>{{ a.credit_note_date|date:'Y-m-d' }}</td>
+              <td>CREDIT NOTE</td>
+              <td>{{a.customer.first_name}} {{a.customer.last_name}}</td>
+              <td>{{a.reference_number}}</td>
+              <td>{{a.cheque_number}}</td>
+              <td>{{ a.advance_paid }}</td>
+            </tr >
+            {% endfor %}
+  
+            {% for a in salesOrder %}
+            <tr >
+              <td>{{ a.sales_order_date|date:'Y-m-d' }}</td>
+              <td>SALES ORDER</td>
+              <td>{{a.customer.first_name}} {{a.customer.last_name}}</td>
+              <td>{{a.reference_number}}</td>
+              <td>{{a.cheque_number}}</td>
+              <td>{{ a.advanced_paid }}</td>
+            </tr >
+            {% endfor %}
+
+            {% for a in retainerInvoice %}
+            <tr >
+              <td>{{ a.retainer.retainer_invoice_date|date:'Y-m-d' }}</td>
+              <td>RETAINER INVOICE</td>
+              <td>{{a.retainer.customer_name.first_name}} {{a.retainer.customer_name.last_name}}</td>
+              <td>{{a.retainer.refrences}}</td>
+              <td>{{a.cheque_no}}</td>
+              <td>{{ a.retainer.advance }}</td>
+
+            </tr>
+            {% endfor %} 
+  
+        {% for a in bill %}
+            <tr >
+              <td>{{ a.Bill_Date|date:'Y-m-d' }}</td>
+              <td>BILL</td>
+              <td>{{a.Vendor.first_name}} {{a.Vendor.last_name}}</td>
+              <td>{{a.Reference_Number}}</td>
+              <td>{{a.Cheque_Number}}</td>
+              <td>{{ a.Advance_amount_Paid }}</td>
+            </tr>
+            {% endfor %} 
+  
+            {% for a in recurringBill %}
+            <tr>
+              <td>{{ a.rec_bill_date|date:'Y-m-d' }}</td>
+              <td>RECURRING BILL</td>
+              <td>{{a.vendor_details.first_name}} {{a.vendor_details.last_name}}</td>
+              <td>{{a.recc_ref_no}}</td>
+              <td>{{a.cheque_no}}</td>
+              <td>{{ a.paid }}</td>
+            </tr>
+            {% endfor %}
+  
+            {% for a in purchaseOrder %}
+            <tr >
+              <td>{{ a.purchase_order_date|date:'Y-m-d' }}</td>
+              <td>PURCHASE ORDER</td>
+              <td>{{a.vendor.first_name}} {{a.Vendor.last_name}}</td>
+              <td>{{a.reference_number}}</td>
+              <td>{{a.cheque_number}}</td>
+              <td>{{ a.advanced_paid }}</td>
+            </tr>
+            {% endfor %}
+  
+            {% for a in debitNote %}
+            <tr >
+              <td>{{ a.debitnote_date|date:'Y-m-d' }}</td>
+              <td>DEBIT NOTE</td>
+              <td>{{a.vendor.first_name}} {{a.vendor.last_name}}</td>
+              <td>{{a.reference_no}}</td>
+              <td>{{a.cheque_number}}</td>
+              <td>{{ a.advance_paid }}</td>
+            </tr>
+            {% endfor %}
+  
+            
+             {% for a in pmtrec %}
+            <tr >
+              <td>{{ a.payment_recieved.payment_date|date:'Y-m-d' }}</td>
+              <td>PAYMENT RECEIVED </td>
+              <td>{{a.payment_recieved.customer.first_name}} {{a.payment_recieved.customer.last_name}}</td>
+              <td>{{a.payment_recieved.reference_number}}</td>
+              <td>{{a.payment_recieved.cheque_number}}</td>
+              <td>{{ a.payment}}</td>
+            </tr >
+            {% endfor %} 
+  
+           {% for a in expen %}
+            <tr >
+              <td>{{ a.date|date:'Y-m-d' }}</td>
+              <td>EXPANSE</td>
+              <td>{{a.login_details.first_name}} {{a.login_details.last_name}}</td>
+              <td>{{a.reference_number}}</td>
+              <td>{{a.cheque_id}}</td>
+              <td>0</td>
+            </tr >
+            {% endfor %} 
+  
+            {% for a in RECexpen %}
+            <tr >
+              <td>{{ a.exp_date|date:'Y-m-d' }}</td>
+              <td>RECURRING EXPANSE</td>
+              <td>{{a.vendor.first_name}} {{a.vendor.last_name}}</td>
+              <td>{{a.refrenceid}}</td>
+              <td>{{a.cheque_id}}</td>
+              <td>0</td>
+
+            </tr>
+            {% endfor %}
+
+           
+  
+             {% for a in pamade %}
+            <tr >
+              <td>{{ a.payment_date|date:'Y-m-d' }}</td>
+              <td>PAYMENT MADE</td>
+              <td>{{a.vendor.first_name}} {{a.vendor.last_name}}</td>
+              <td>{{a.reference_no}}</td>
+              <td>{{a.cheque_number}}</td>
+              <td>0</td>
+            </tr>
+            {% endfor %} 
+  
+            {% for a in emploanre %}
+            <tr>
+              <td>{{ a.payment_date|date:'Y-m-d' }}</td>
+              <td>{{a.particular}}</td>
+              <td>{{a.emp.Employee.first_name}} {{a.emp.Employee.last_name}}</td>
+              <td>{{a.recc_ref_no}}</td>
+              <td>{{a.cheque_id}}</td>
+              <td>0</td>
+            </tr>
+            {% endfor %}
+  
+            {% for a in empLoan %}
+            <tr >
+              <td>{{ a.loan_date|date:'Y-m-d' }}</td>
+              <td>LOAN</td>
+              <td>{{a.logindetails.first_name}} {{a.logindetails.last_name}}</td>
+              <td>{{a.reference_number}}</td>
+              <td>{{a.cheque}}</td>
+              <td>0</td>
+            </tr>
+            {% endfor %}
+  
+            {% for a in empLoanRe %}
+            <tr >
+              <td>{{ a.payment_date|date:'Y-m-d' }}</td>
+              <td class="uppercase"> {{a.type}} </td>
+              <td>{{a.login_details.first_name}} {{a.login_details.last_name}}</td>
+              <td>{{a.reference_no}}</td>
+              <td>{{a.cheque}}</td>
+              <td>0</td>
+            </tr>
+            {% endfor %}
+                    </tbody>
+                  </table>
                 </div>
             </div>
        
@@ -289,7 +540,7 @@
     $(document).ready(function () {
       $("#search").on("keyup", function () {
         var value = $(this).val().toLowerCase();
-        $("#myTable tr").filter(function () {
+        $("#chequesTable tr").filter(function () {
           $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
         });
       });
@@ -303,6 +554,36 @@
         rows.filter(":not(:contains('" + currentFilter + "'))").hide();
       }
     }
+
+    function filterTableByDate() {
+    var start = $('#startDate').val();
+    var end = $('#endDate').val();
+    console.log(start,end)
+    if(start != "" && end != ""){
+
+      var startDate = new Date(start);
+      var endDate = new Date(end);
+      var table = document.getElementById('chequesTable');
+      var rows = table.getElementsByTagName('tr');
+  
+      for (var i = 1; i < rows.length; i++) {
+        var row = rows[i];
+        var rowData = row.getElementsByTagName('td')[0].textContent;
+  
+        var rowDate = new Date(rowData);
+  
+        if (rowDate >= startDate && rowDate <= endDate) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      }
+      calculateBalance();
+    }else{
+      alert('Select valid Start and End dates')
+    }
+  }
+
   </script>
 
   <script>
@@ -317,65 +598,132 @@
       });
     });
   </script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var startDateInput = document.getElementById('startDate');
+        var endDateInput = document.getElementById('endDate');
+
+        // Add event listener to "From" date input
+        startDateInput.addEventListener('change', function() {
+            // Set the minimum date of the "To" date input
+            endDateInput.min = startDateInput.value;
+            // If the "To" date is less than the minimum date, reset it
+            if (endDateInput.value < startDateInput.value) {
+                endDateInput.value = startDateInput.value;
+            }
+        });
+
+        // Optionally, you can initialize the minimum date for the "To" date input
+        // endDateInput.min = startDateInput.value;
+    });
+</script>
   
   <script>
     
-
-    function sortTableName() {
-    var table, rows, switching, i, x, y, shouldSwitch;
-    table = document.getElementById("myTable");
-    switching = true;
-    while (switching) {
-      switching = false;
-      rows = table.rows;
-      for (i = 1; i < rows.length - 1; i++) {
-        shouldSwitch = false;
-        x = rows[i].getElementsByTagName("td")[1];
-        y = rows[i + 1].getElementsByTagName("td")[1];
-        if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
-          shouldSwitch = true;
-          break;
-        }
-      }
-      if (shouldSwitch) {
-          rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-          switching = true;
-      }
-    }
-  }
-
-  function sortTableBank() {
-    var table, rows, switching, i, x, y, shouldSwitch;
-    table = document.getElementById("myTable");
-    switching = true;
-    while (switching) {
-      switching = false;
-      rows = table.rows;
-      for (i = 1; i < rows.length - 1; i++) {
-        shouldSwitch = false;
-        x = rows[i].getElementsByTagName("td")[4];
-        y = rows[i + 1].getElementsByTagName("td")[4];
-        if (x.innerHTML.toLowerCase().localeCompare(y.innerHTML.toLowerCase()) > 0) {
-          shouldSwitch = true;
-          break;
-        }
-      }
-      if (shouldSwitch) {
-          rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-          switching = true;
-      }
-    }
-  }
-  </script>
+    function sortTable(columnIndex) {
+      var table, rows, switching, i, x, y, shouldSwitch;
+      table = document.getElementById("chequesTable");
+      switching = true;
   
+      while (switching) {
+        switching = false;
+        rows = table.rows;
+  
+        for (i = 1; i < (rows.length - 1); i++) {
+          shouldSwitch = false;
+          x = rows[i].getElementsByTagName("td")[columnIndex].textContent.toLowerCase();
+          y = rows[i + 1].getElementsByTagName("td")[columnIndex].textContent.toLowerCase();
+  
+          if (x > y) {
+              shouldSwitch = true;
+              break;
+          }
+        }
+  
+        if (shouldSwitch) {
+          rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+          switching = true;
+        }
+      }
+    }
+  
+  </script>
+
+  <script>
+
+    $(document).ready(function(){
+      calculateBalance();
+    });
+  
+    function calculateBalance(){
+      var table = document.getElementById('chequesTable');
+      var rows = table.getElementsByTagName('tr');
+      var balance = 0
+  
+      for (var i = 1; i < rows.length; i++) {
+        var row = rows[i];
+        if(row.style.display != 'none'){
+          var amt = parseFloat(row.getElementsByTagName('td')[5].textContent);
+          var type = row.getElementsByTagName('td')[1].textContent;
+    
+          if(type === 'INVOICE' || type === 'RECURRING INVOICE' || type === 'DEBIT NOTE' || type ==='SALES ORDER' || type === 'RETAINER INVOICE' || type === 'EMI PAID'){
+            balance += amt
+          }else{
+            balance -= amt
+          }
+        }
+  
+      }
+      console.log('balance==',balance)
+      $('#bal').text(balance)
+    }
+
+    
+    function filterTable(ele) {
+      var filterValue = ele.value.toUpperCase();
+      console.log(filterValue);
+      var table = document.getElementById("chequesTable");
+      var rows = table.getElementsByTagName("tr");
+  
+      var loanTypes = [
+          'LOAN ISSUED',
+          'ADDITIONAL LOAN ISSUED',
+          'ADDITIONAL LOAN',
+          'EMI PAID',
+          'EMI PAID', // Case variations handled by toUpperCase()
+          'LOAN'      // For the direct LOAN type in empLoan
+      ];
+  
+      for (var i = 0; i < rows.length; i++) {
+          var typeCell = rows[i].getElementsByTagName("td")[1];
+          var typeText = typeCell ? typeCell.textContent.trim().toUpperCase() : '';
+  
+          if (filterValue === "ALL") {
+              rows[i].style.display = "";
+          } else if (filterValue === "LOAN") {
+              if (loanTypes.includes(typeText)) {
+                  rows[i].style.display = "";
+              } else {
+                  rows[i].style.display = "none";
+              }
+          } else if (typeText === filterValue) {
+              rows[i].style.display = "";
+          } else {
+              rows[i].style.display = "none";
+          }
+      }
+      calculateBalance();
+  }
+  </script>   
   <script>
     function ExportToExcel() {
-      console.log("myTable");
+      console.log("chequesTable");
       $('in1').prop
-      const table = document.getElementById('myTable'); // Replace 'myTable' with your table's ID
+      const table = document.getElementById('chequesTable'); // Replace 'myTable' with your table's ID
       const wb = XLSX.utils.table_to_book(table);
   
-      XLSX.writeFile(wb, 'bankholder_list.xlsx');
+      XLSX.writeFile(wb, 'Cheque_list.xlsx');
   }
   </script>
   
